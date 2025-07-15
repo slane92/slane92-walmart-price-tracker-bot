@@ -1,31 +1,26 @@
 from telegram import Update
 from telegram.ext import ContextTypes
 
-CATEGORIES = {
-    "Baby": ["Pampers", "Wipes", "Formula"],
-    "Beauty": ["Mascara", "Lip Gloss", "Foundation"],
-    "Health": ["Vitamins", "Pain Relief", "Cough Syrup"],
-    "Food": ["Cereal", "Snacks", "Drinks"],
-    "Home": ["Cleaning Supplies", "Furniture", "Decor"],
-    "Electronics": ["TV", "Headphones", "Phones"],
-    "Automotive": ["Motor Oil", "Tires", "Car Battery"]
+categories = {
+    "Electronics": ["TV", "Laptop", "Headphones"],
+    "Home": ["Furniture", "Vacuum", "Curtains"],
+    "Beauty": ["Shampoo", "Lotion", "Makeup"],
+    "Baby": ["Diapers", "Wipes", "Formula"],
+    "Health": ["Vitamins", "Pain Relief", "Thermometer"],
+    "Food": ["Snacks", "Cereal", "Frozen Meals"],
 }
 
 async def list_categories(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    text = "🛍️ Available Categories:\n" + "\n".join(f"• {cat}" for cat in CATEGORIES.keys())
-    text += "\n\nUse /category <name> to explore."
+    text = "📂 Available Categories:\n" + "\n".join([f"• {name}" for name in categories])
     await update.message.reply_text(text)
 
 async def show_category(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not context.args:
-        await update.message.reply_text("⚠️ Usage: /category <name>\nExample: /category Electronics")
-        return
-    
-    category = context.args[0].capitalize()
-    items = CATEGORIES.get(category)
-    
-    if items:
-        item_list = "\n".join(f"• {item}" for item in items)
-        await update.message.reply_text(f"🧾 Sample items in {category}:\n{item_list}")
-    else:
-        await update.message.reply_text(f"❌ Unknown category: {category}")
+    try:
+        name = " ".join(context.args)
+        if name in categories:
+            items = "\n".join([f"- {item}" for item in categories[name]])
+            await update.message.reply_text(f"📦 {name} items:\n{items}")
+        else:
+            await update.message.reply_text("❌ Category not found. Try /categories to see all options.")
+    except:
+        await update.message.reply_text("⚠️ Usage: /category <Category Name>")
