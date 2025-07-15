@@ -1,37 +1,38 @@
- from telegram import Update
+from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 from tinydb import TinyDB, Query
-
 import os
-from walmart_api import search_walmart_item
+
+# Import feature modules
+from features.categories import list_categories, show_category
 
 # Load bot token from environment variable
 BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 
-# Initialize TinyDB
+# Initialize database
 db = TinyDB("db.json")
 User = Query()
 
-# /start command
+# /start
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("👋 Welcome to the Walmart Price Bot!\nUse /setzip <ZIP> to begin.")
 
-# /setzip command
+# /setzip
 async def set_zip(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         zip_code = context.args[0]
         db.upsert({"id": update.effective_user.id, "zip": zip_code}, User.id == update.effective_user.id)
         await update.message.reply_text(f"✅ ZIP code set to {zip_code}")
     except IndexError:
-        await update.message.reply_text("⚠️ Please provide a ZIP code: /setzip 92131")
+        await update.message.reply_text("⚠️ Usage: /setzip <ZIP>")
 
-# /getzip command
+# /getzip
 async def get_zip(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_data = db.get(User.id == update.effective_user.id)
     if user_data and "zip" in user_data:
         await update.message.reply_text(f"📍 Your ZIP code is: {user_data['zip']}")
     else:
-        await update.message.reply_text("⚠️ You haven't set a ZIP code yet. Use /setzip <ZIP>.")
+        await update.message.reply_text("⚠️ No ZIP code found. Use /setzip <ZIP>.")
 
 # /addtolist UPC
 async def add_to_list(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -49,7 +50,7 @@ async def add_to_list(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except IndexError:
         await update.message.reply_text("⚠️ Usage: /addtolist <UPC>")
 
-# /list command
+# /list
 async def show_list(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_data = db.get(User.id == update.effective_user.id)
     if user_data and "list" in user_data:
@@ -66,12 +67,11 @@ async def show_list(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def check_price(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         upc = context.args[0]
-        price = search_walmart_item(upc)  # You need to define this in walmart_api.py
-        await update.message.reply_text(f"💲Current price for UPC {upc}: {price}")
+        await update.message.reply_text(f"💲Price check coming soon for UPC: {upc}")  # placeholder
     except IndexError:
         await update.message.reply_text("⚠️ Usage: /price <UPC>")
 
-# Bot startup
+# Run bot
 if __name__ == "__main__":
     app = ApplicationBuilder().token(BOT_TOKEN).build()
 
@@ -82,6 +82,9 @@ if __name__ == "__main__":
     app.add_handler(CommandHandler("list", show_list))
     app.add_handler(CommandHandler("price", check_price))
 
-    print("✅ Bot is running...")
+    # New category features
+    app.add_handler(CommandHandler("categories", list_categories))
+    app.add_handler(CommandHandler("category", show_category))
 
-    app.run_polling()   
+    print("✅ Bot is running...")
+    app.run_polling()
