@@ -9,10 +9,8 @@ async def scheduled_task(bot):
 def start_scheduler(bot):
     scheduler = AsyncIOScheduler(timezone="America/Los_Angeles")
 
-    # Schedule the task every day at 8:00 AM PT
+    # Schedule the tasks at 8:00 AM and 5:40 PM PT
     scheduler.add_job(scheduled_task, 'cron', hour=8, minute=0, args=[bot])
-
-    # Schedule the task every day at 5:40 PM PT
     scheduler.add_job(scheduled_task, 'cron', hour=17, minute=40, args=[bot])
 
     scheduler.start()
