@@ -1,5 +1,5 @@
 # Paste starting here
-from scheduler import start_scheduler
+from features.scheduler import start_scheduler
 app = ApplicationBuilder().token(BOT_TOKEN).build()
 start_scheduler(app.bot)
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
