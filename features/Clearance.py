@@ -1,65 +1,67 @@
-import json
-from walmart_api import get_store_clearance_data
+from telegram import Update
+from telegram.ext import ContextTypes
+from tinydb import TinyDB, Query
 
-def calculate_discount(original_price, sale_price):
-    try:
-        return round((original_price - sale_price) / original_price * 100)
-    except ZeroDivisionError:
-        return 0
+# Load database
+db = TinyDB("db.json")
+User = Query()
 
-def categorize_by_price(item):
-    if item['sale_price'] <= 10:
-        return "$10 or less"
-    elif item['sale_price'] <= 20:
-        return "$20 or less"
-    elif item['sale_price'] <= 40:
-        return "$40 or less"
-    else:
-        return "$60 or less"
+# Mock data source – replace this with real logic if pulling from an API
+def get_clearance_items():
+    return [
+        {"name": "Toy Car", "price": 9.99, "original_price": 24.99},
+        {"name": "Smart Light", "price": 19.99, "original_price": 39.99},
+        {"name": "Air Fryer", "price": 49.99, "original_price": 129.99},
+        {"name": "Shampoo", "price": 6.99, "original_price": 14.99},
+        {"name": "Vacuum", "price": 89.99, "original_price": 199.99},
+    ]
 
-def format_markdown_group(items_by_discount):
-    messages = []
-    for discount_group in ['60+', '50', '40']:
-        items = items_by_discount.get(discount_group, [])
-        if items:
-            emoji = "🔥" if discount_group == "60+" else ""
-            header = f"\n🔻 {discount_group}% OFF DEALS {emoji} 🔻"
-            lines = [header]
-            buckets = {}
+# Utility
+def calc_discount(item):
+    original = item["original_price"]
+    current = item["price"]
+    discount = round(100 - ((current / original) * 100))
+    return discount
 
-            for item in items:
-                bucket = categorize_by_price(item)
-                if bucket not in buckets:
-                    buckets[bucket] = []
-                line = f"• {item['name']} - Now ${item['sale_price']} (Was ${item['original_price']})"
-                buckets[bucket].append(line)
+def format_item(item):
+    discount = calc_discount(item)
+    emoji = "🔥" if discount >= 60 else ""
+    return f"{emoji}{item['name']}\nOriginal: ${item['original_price']} → Now: ${item['price']} ({discount}% off)"
 
-            for bucket_label in ["$10 or less", "$20 or less", "$40 or less", "$60 or less"]:
-                if bucket_label in buckets:
-                    lines.append(f"\n💲 {bucket_label}:")
-                    lines.extend(buckets[bucket_label])
+# Main markdown handler
+async def run_clearance(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    items = get_clearance_items()
+    result = "\n\n".join([format_item(i) for i in items])
+    await update.message.reply_text(result or "No clearance items found.")
 
-            messages.append("\n".join(lines))
-    return messages
+# % threshold handlers
+async def markdowns_40(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    items = [i for i in get_clearance_items() if calc_discount(i) >= 40]
+    result = "\n\n".join([format_item(i) for i in items])
+    await update.message.reply_text(result or "No items 40% off or more.")
 
-def get_grouped_markdowns(zip_code, store_ids):
-    all_items = []
-    for store_id in store_ids:
-        items = get_store_clearance_data(store_id)
-        for item in items:
-            discount = calculate_discount(item['original_price'], item['sale_price'])
-            if discount >= 40:
-                item['discount'] = discount
-                item['store_id'] = store_id
-                all_items.append(item)
+async def markdowns_50(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    items = [i for i in get_clearance_items() if calc_discount(i) >= 50]
+    result = "\n\n".join([format_item(i) for i in items])
+    await update.message.reply_text(result or "No items 50% off or more.")
 
-    grouped = {'60+': [], '50': [], '40': []}
-    for item in all_items:
-        if item['discount'] >= 60:
-            grouped['60+'].append(item)
-        elif item['discount'] >= 50:
-            grouped['50'].append(item)
-        elif item['discount'] >= 40:
-            grouped['40'].append(item)
+async def markdowns_60(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    items = [i for i in get_clearance_items() if calc_discount(i) >= 60]
+    result = "\n\n".join([format_item(i) for i in items])
+    await update.message.reply_text(result or "No items 60% off or more.🔥")
 
-    return format_markdown_group(grouped)
+# Price group handlers
+async def under10(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    items = [i for i in get_clearance_items() if i["price"] <= 10]
+    result = "\n\n".join([format_item(i) for i in items])
+    await update.message.reply_text(result or "No items $10 or less.")
+
+async def under20(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    items = [i for i in get_clearance_items() if i["price"] <= 20]
+    result = "\n\n".join([format_item(i) for i in items])
+    await update.message.reply_text(result or "No items $20 or less.")
+
+async def under40(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    items = [i for i in get_clearance_items() if i["price"] <= 40]
+    result = "\n\n".join([format_item(i) for i in items])
+    await update.message.reply_text(result or "No items $40 or less.")
