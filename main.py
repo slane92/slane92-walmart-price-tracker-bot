@@ -47,7 +47,29 @@ app.add_handler(CommandHandler("addtester", addtester))
 app.add_handler(CommandHandler("removetester", removetester))
 
 app.add_handler(CallbackQueryHandler(handle_button_click))
+from features.Clearance import get_grouped_markdowns
 
+@bot.message_handler(commands=['markdowns'])
+def markdowns_handler(message):
+    user_id = str(message.chat.id)
+    if user_id not in user_data or 'zip' not in user_data[user_id]:
+        bot.send_message(message.chat.id, "Please set your ZIP first using /setzip <ZIP>.")
+        return
+
+    zip_code = user_data[user_id]['zip']
+    
+    # List of your specific Walmart store IDs (to be integrated in next step)
+    store_ids = [
+        'StoreID1', 'StoreID2', 'StoreID3',  # <- placeholder
+        # Replace with the actual IDs from your 16-store list
+    ]
+
+    try:
+        messages = get_grouped_markdowns(zip_code, store_ids)
+        for msg in messages:
+            bot.send_message(message.chat.id, msg)
+    except Exception as e:
+        bot.send_message(message.chat.id, f"⚠️ Error getting markdowns: {str(e)}")
 print("Bot is running!")
 app.run_polling()
 # End of main.py
