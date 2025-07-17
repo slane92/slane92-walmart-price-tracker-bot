@@ -1,90 +1,53 @@
-from telegram import Update
-from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
-from tinydb import TinyDB, Query
+# Paste starting here
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, CallbackQueryHandler
 import os
+from tinydb import TinyDB, Query
 
-# Import feature modules
+from features.clearance import run_clearance_scan, format_clearance_message
+from features.wishlist import add_wishlist, remove_wishlist, show_wishlist
+from features.admin import adminpanel, settings, logme, addtester, removetester
 from features.categories import list_categories, show_category
+from features.search import search_product
+from features.storefinder import find_stores
 
-# Load bot token from environment variable
-BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-
-# Initialize database
+BOT_TOKEN = os.getenv("TELEGRAM_TOKEN")
 db = TinyDB("db.json")
 User = Query()
 
-# /start
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("👋 Welcome to the Walmart Price Bot!\nUse /setzip <ZIP> to begin.")
+    await update.message.reply_text("Welcome! Use /setzip <ZIP> to begin.")
 
-# /setzip
-async def set_zip(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    try:
-        zip_code = context.args[0]
-        db.upsert({"id": update.effective_user.id, "zip": zip_code}, User.id == update.effective_user.id)
-        await update.message.reply_text(f"✅ ZIP code set to {zip_code}")
-    except IndexError:
-        await update.message.reply_text("⚠️ Usage: /setzip <ZIP>")
+app = ApplicationBuilder().token(BOT_TOKEN).build()
 
-# /getzip
-async def get_zip(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_data = db.get(User.id == update.effective_user.id)
-    if user_data and "zip" in user_data:
-        await update.message.reply_text(f"📍 Your ZIP code is: {user_data['zip']}")
-    else:
-        await update.message.reply_text("⚠️ No ZIP code found. Use /setzip <ZIP>.")
+# Core handlers
+app.add_handler(CommandHandler("start", start))
+app.add_handler(CommandHandler("setzip", lambda u,c: await_setzip(u,c)))  # ensure setzip defined
+app.add_handler(CommandHandler("clearance", clearance_handler))
 
-# /addtolist UPC
-async def add_to_list(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    try:
-        upc = context.args[0]
-        user_data = db.get(User.id == update.effective_user.id)
-        if not user_data:
-            db.insert({"id": update.effective_user.id, "zip": "", "list": [upc]})
-        else:
-            current_list = user_data.get("list", [])
-            if upc not in current_list:
-                current_list.append(upc)
-                db.update({"list": current_list}, User.id == update.effective_user.id)
-        await update.message.reply_text(f"✅ Added UPC {upc} to your shopping list.")
-    except IndexError:
-        await update.message.reply_text("⚠️ Usage: /addtolist <UPC>")
+# Wishlist
+app.add_handler(CommandHandler("addtowishlist", add_wishlist))
+app.add_handler(CommandHandler("removewishlist", remove_wishlist))
+app.add_handler(CommandHandler("wishlist", show_wishlist))
 
-# /list
-async def show_list(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_data = db.get(User.id == update.effective_user.id)
-    if user_data and "list" in user_data:
-        upcs = user_data["list"]
-        if upcs:
-            msg = "🛒 Your shopping list:\n" + "\n".join([f"- {upc}" for upc in upcs])
-            await update.message.reply_text(msg)
-        else:
-            await update.message.reply_text("🛒 Your shopping list is empty.")
-    else:
-        await update.message.reply_text("🛒 You have no saved shopping list yet.")
+# Markdown scan
+app.add_handler(CommandHandler("markdowns", markdowns_handler))
 
-# /price UPC
-async def check_price(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    try:
-        upc = context.args[0]
-        await update.message.reply_text(f"💲Price check coming soon for UPC: {upc}")  # placeholder
-    except IndexError:
-        await update.message.reply_text("⚠️ Usage: /price <UPC>")
+# Search, categories, storefinder
+app.add_handler(CommandHandler("search", search_product))
+app.add_handler(CommandHandler("categories", list_categories))
+app.add_handler(CommandHandler("category", show_category))
+app.add_handler(CommandHandler("stores", find_stores))
 
-# Run bot
-if __name__ == "__main__":
-    app = ApplicationBuilder().token(BOT_TOKEN).build()
+# Admin
+app.add_handler(CommandHandler("adminpanel", adminpanel))
+app.add_handler(CommandHandler("settings", settings))
+app.add_handler(CommandHandler("logme", logme))
+app.add_handler(CommandHandler("addtester", addtester))
+app.add_handler(CommandHandler("removetester", removetester))
 
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(CommandHandler("setzip", set_zip))
-    app.add_handler(CommandHandler("getzip", get_zip))
-    app.add_handler(CommandHandler("addtolist", add_to_list))
-    app.add_handler(CommandHandler("list", show_list))
-    app.add_handler(CommandHandler("price", check_price))
+app.add_handler(CallbackQueryHandler(handle_button_click))
 
-    # New category features
-    app.add_handler(CommandHandler("categories", list_categories))
-    app.add_handler(CommandHandler("category", show_category))
-
-    print("✅ Bot is running...")
-    app.run_polling()
+print("Bot is running!")
+app.run_polling()
+# End of main.py
