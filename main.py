@@ -80,5 +80,6 @@ def markdowns_handler(message):
     except Exception as e:
         bot.send_message(message.chat.id, f"⚠️ Error getting markdowns: {str(e)}")
 print("Bot is running!")
+start_scheduler(app)
 app.run_polling()
 # End of main.py
