@@ -4,7 +4,7 @@ from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, Callb
 import os
 from tinydb import TinyDB, Query
 
-from features.clearance import run_clearance_scan, format_clearance_message
+from features.clearance import run_clearance
 from features.wishlist import add_wishlist, remove_wishlist, show_wishlist
 from features.admin import adminpanel, settings, logme, addtester, removetester
 from features.categories import list_categories, show_category
@@ -31,7 +31,13 @@ app.add_handler(CommandHandler("removewishlist", remove_wishlist))
 app.add_handler(CommandHandler("wishlist", show_wishlist))
 
 # Markdown scan
-app.add_handler(CommandHandler("markdowns", markdowns_handler))
+app.add_handler(CommandHandler("markdowns", run_clearance))
+app.add_handler(CommandHandler("markdowns40", markdowns_40))
+app.add_handler(CommandHandler("markdowns50", markdowns_50))
+app.add_handler(CommandHandler("markdowns60", markdowns_60))
+app.add_handler(CommandHandler("under10", under10))
+app.add_handler(CommandHandler("under20", under20))
+app.add_handler(CommandHandler("under40", under40))
 
 # Search, categories, storefinder
 app.add_handler(CommandHandler("search", search_product))
