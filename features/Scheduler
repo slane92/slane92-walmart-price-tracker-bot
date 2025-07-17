@@ -1,0 +1,18 @@
+import asyncio
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from datetime import datetime, time
+from features.clearance import run_clearance_scan
+
+async def scheduled_task(bot):
+    await run_clearance_scan(bot)
+
+def start_scheduler(bot):
+    scheduler = AsyncIOScheduler(timezone="America/Los_Angeles")
+
+    # Run at 8:00 AM
+    scheduler.add_job(scheduled_task, 'cron', hour=8, minute=0, args=[bot])
+
+    # Run at 5:40 PM
+    scheduler.add_job(scheduled_task, 'cron', hour=17, minute=40, args=[bot])
+
+    scheduler.start()
