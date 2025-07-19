@@ -36,3 +36,24 @@ async def view_wishlist(update: Update, context: ContextTypes.DEFAULT_TYPE):
     upcs = [item["upc"] for item in items]
     result = "\n".join(upcs)
     await update.message.reply_text(f"📝 Your wishlist:\n{result}")
+    from features.clearance import get_clearance_items, calc_discount
+
+async def check_and_notify_wishlist(bot, user_id: str, chat_id: int):
+    items = wishlist_db.search(Wishlist.user_id == user_id)
+    if not items:
+        return
+
+    upcs = [item["upc"] for item in items]
+    clearance_items = get_clearance_items()
+
+    found_items = []
+    for item in clearance_items:
+        if "upc" in item and item["upc"] in upcs:
+            discount = calc_discount(item)
+            if discount >= 40:
+                emoji = "🔥" if discount >= 60 else ""
+                found_items.append(f"{emoji}{item['name']}\nOriginal: ${item['original_price']} → Now: ${item['price']} ({discount}% off)")
+
+    if found_items:
+        message = "🎯 Items from your wishlist are now discounted:\n\n" + "\n\n".join(found_items)
+        await bot.send_message(chat_id=chat_id, text=message)
