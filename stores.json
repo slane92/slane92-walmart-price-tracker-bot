@@ -1,0 +1,32 @@
+[
+  {
+    "store_id": "2477",
+    "name": "Murphy Canyon Walmart",
+    "address": "3382 Murphy Canyon Rd, San Diego, CA 92123"
+  },
+  {
+    "store_id": "5305",
+    "name": "Kearny Mesa Walmart",
+    "address": "4840 Shawline St, San Diego, CA 92111"
+  },
+  {
+    "store_id": "2291",
+    "name": "San Diego Walmart",
+    "address": "75 N Broadway, Chula Vista, CA 91910"
+  },
+  {
+    "store_id": "3515",
+    "name": "Santee Walmart",
+    "address": "170 Town Center Pkwy, Santee, CA 92071"
+  },
+  {
+    "store_id": "2177",
+    "name": "Chula Vista Walmart",
+    "address": "1150 Broadway, Chula Vista, CA 91911"
+  },
+  {
+    "store_id": "2094",
+    "name": "Oceanside Walmart",
+    "address": "2100 Vista Way, Oceanside, CA 92054"
+  }
+]
