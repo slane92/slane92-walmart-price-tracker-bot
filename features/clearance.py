@@ -65,3 +65,18 @@ async def under40(update: Update, context: ContextTypes.DEFAULT_TYPE):
     items = [i for i in get_clearance_items() if i["price"] <= 40]
     result = "\n\n".join([format_item(i) for i in items])
     await update.message.reply_text(result or "No items $40 or less.")
+    # Scheduled scan function (called by scheduler)
+async def scan_and_send_clearance(context: ContextTypes.DEFAULT_TYPE):
+    items = get_clearance_items()
+
+    if not items:
+        message = "No clearance items found at this time."
+    else:
+        result = "\n\n".join([format_item(i) for i in items])
+        message = f"🕒 Daily Clearance Scan\n\n{result}"
+
+    chat_id = context.job.chat_id if hasattr(context.job, "chat_id") else None
+    if chat_id:
+        await context.bot.send_message(chat_id=chat_id, text=message)
+    else:
+        print("No chat_id provided to send scheduled clearance results.")
